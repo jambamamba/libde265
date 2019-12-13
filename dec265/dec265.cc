@@ -46,6 +46,9 @@
 
 #include "libde265/quality.h"
 
+#include "yuvwriter.h"
+#include "hevcreader.h"
+
 #if HAVE_VIDEOGFX
 #include <libvideogfx.hh>
 using namespace videogfx;
@@ -54,7 +57,6 @@ using namespace videogfx;
 #if HAVE_SDL
 #include "sdl.hh"
 #endif
-
 
 #define BUFFER_SIZE 40960
 #define NUM_THREADS 4
@@ -108,13 +110,14 @@ static struct option long_options[] = {
 };
 
 
-
-static void write_picture(const de265_image* img)
+static void write_picture(const de265_image* img, YuvWriter *yuvWriter)
 {
   static FILE* fh = NULL;
   if (fh==NULL) {
     if (strcmp(output_filename, "-") == 0) {
       fh = stdout;
+    } else if (yuvWriter) {
+      yuvWriter->open();
     } else {
       fh = fopen(output_filename, "wb");
     }
@@ -130,7 +133,9 @@ static void write_picture(const de265_image* img)
       // --- save 8 bit YUV ---
 
       for (int y=0;y<de265_get_image_height(img,c);y++) {
-        fwrite(p + y*stride, width, 1, fh);
+        fh != NULL ?
+                 fwrite(p + y*stride, width, 1, fh) :
+                 yuvWriter->write(p + y*stride, width);
       }
     }
     else {
@@ -149,14 +154,18 @@ static void write_picture(const de265_image* img)
           buf[2*x+1] = pixel_value >> 8;
         }
 
-        fwrite(buf, width*2, 1, fh);
+        fh != NULL ?
+                 fwrite(buf, width*2, 1, fh) :
+                 yuvWriter->write(buf, width*2);
       }
 
       delete[] buf;
     }
   }
 
-  fflush(fh);
+  fh != NULL ?
+           fflush(fh) :
+           yuvWriter->close();
 }
 
 
@@ -316,7 +325,7 @@ bool display_sdl(const struct de265_image* img)
 static int width,height;
 static uint32_t framecnt=0;
 
-bool output_image(const de265_image* img)
+bool output_image(const de265_image* img, YuvWriter *yuvWriter)
 {
   bool stop=false;
 
@@ -351,7 +360,7 @@ bool output_image(const de265_image* img)
 #endif
   }
   if (write_yuv) {
-    write_picture(img);
+    write_picture(img, yuvWriter);
   }
 
   if ((framecnt%100)==0) {
@@ -558,7 +567,7 @@ void (*volatile __malloc_initialize_hook)(void) = init_my_hooks;
 #endif
 
 
-int main(int argc, char** argv)
+int dec265main(int argc, char** argv, HevcReader *hevcreader, YuvWriter *yuvWriter)
 {
   while (1) {
     int option_index = 0;
@@ -677,7 +686,7 @@ int main(int argc, char** argv)
     fh = fopen(argv[optind], "rb");
   }
 
-  if (fh==NULL) {
+  if (!hevcreader && fh==NULL) {
     fprintf(stderr,"cannot open file %s!\n", argv[optind]);
     exit(10);
   }
@@ -721,7 +730,9 @@ int main(int argc, char** argv)
       else {
         // read a chunk of input data
         uint8_t buf[BUFFER_SIZE];
-        int n = fread(buf,1,BUFFER_SIZE,fh);
+        int n = !hevcreader ?
+                 fread(buf,1,BUFFER_SIZE,fh) :
+                 hevcreader->read(buf, BUFFER_SIZE);
 
         // decode input data
         if (n) {
@@ -746,7 +757,9 @@ int main(int argc, char** argv)
 
       // printf("pending data: %d\n", de265_get_number_of_input_bytes_pending(ctx));
 
-      if (feof(fh)) {
+      if (!hevcreader ?
+          feof(fh) :
+          hevcreader->eof()) {
         err = de265_flush_data(ctx); // indicate end of stream
         stop = true;
       }
@@ -779,7 +792,7 @@ int main(int argc, char** argv)
               measure(img);
             }
 
-            stop = output_image(img);
+            stop = output_image(img, yuvWriter);
             if (stop) more=0;
             else      more=1;
           }
@@ -797,7 +810,9 @@ int main(int argc, char** argv)
         }
     }
 
-  fclose(fh);
+  !hevcreader ?
+           fclose(fh) :
+           hevcreader->close();
 
   if (write_bytestream) {
     fclose(bytestream_fh);

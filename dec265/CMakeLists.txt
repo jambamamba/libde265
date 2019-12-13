@@ -1,5 +1,9 @@
 set (dec265_sources
   dec265.cc
+  yuvwriter.cpp
+  yuvwriter.h
+  hevcreader.cpp
+  hevcreader.h
 )
 
 set (hdrcopy_sources
@@ -28,12 +32,13 @@ if(SDL_FOUND)
   )
 endif()
 
-add_executable (dec265 ${dec265_sources})
+#add_executable (dec265 ${dec265_sources})
+add_library (dec265 SHARED ${dec265_sources})
 
 target_link_libraries (dec265 ${LIBDE265_LIBRARY_NAME} ${SDL_LIBRARY})
 
 
-if(NOT MSVC)
+if(NOT WIN32)
   # hdrcopy uses internal APIs that are not available when compiled for Windows
   add_executable (hdrcopy ${hdrcopy_sources})
 

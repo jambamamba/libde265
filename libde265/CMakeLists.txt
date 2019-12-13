@@ -55,7 +55,7 @@ set (libde265_sources
   contextmodel.cc
 )
 
-if(MSVC)
+if(WIN32)
   set (libde265_sources
     ${libde265_sources}
     ../extra/win32cond.c
