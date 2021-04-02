@@ -567,7 +567,8 @@ void (*volatile __malloc_initialize_hook)(void) = init_my_hooks;
 #endif
 
 
-int dec265main(int argc, char** argv, HevcReader *hevcreader, YuvWriter *yuvWriter)
+int dec265main(int argc, char** argv, HevcReader *hevcreader, YuvWriter *yuvWriter,
+               std::atomic<bool> &stop)
 {
   while (1) {
     int option_index = 0;
@@ -696,8 +697,6 @@ int dec265main(int argc, char** argv, HevcReader *hevcreader, YuvWriter *yuvWrit
   if (write_bytestream) {
     bytestream_fh = fopen(bytestream_filename, "wb");
   }
-
-  bool stop=false;
 
   struct timeval tv_start;
   gettimeofday(&tv_start, NULL);

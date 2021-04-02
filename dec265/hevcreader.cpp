@@ -10,9 +10,8 @@ HevcReader::HevcReader(std::function<void ()> waitfn)
    , tail(0)
    , capacity(1024*16)
    , ringbuffer((char*)malloc(capacity))
-{
-   fp = fopen("/tmp/frames.hevc", "wb");
-}
+   , fp(nullptr)//fopen("/tmp/frames.hevc", "wb")
+{}
 
 HevcReader::~HevcReader()
 {
@@ -32,13 +31,13 @@ size_t HevcReader::read(void * data, size_t size)
 
 int HevcReader::close()
 {
-   fclose(fp);
+   if(fp) {fclose(fp);}
    return 0;
 }
 
 void HevcReader::receivedData(char *data, size_t size)
 {
-   fwrite(data, size, 1, fp);
+   if(fp) {fwrite(data, size, 1, fp);}
    Insert(data, size);
 }
 
