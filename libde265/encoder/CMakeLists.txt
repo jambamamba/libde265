@@ -11,9 +11,10 @@ set (encoder_sources
 )
 
 add_subdirectory (algo)
-add_library(encoder OBJECT ${encoder_sources})
-set(ENCODER_OBJECTS $<TARGET_OBJECTS:encoder> ${ALGO_OBJECTS} PARENT_SCOPE)
+#osm: renamed target encoder to libde265.encoder so to prevent name clash if parent project is also using x265 project
+add_library(libde265.encoder OBJECT ${encoder_sources})
+set(ENCODER_OBJECTS $<TARGET_OBJECTS:libde265.encoder> ${ALGO_OBJECTS} PARENT_SCOPE)
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  SET_TARGET_PROPERTIES(encoder PROPERTIES COMPILE_FLAGS "-fPIC")
+  SET_TARGET_PROPERTIES(libde265.encoder PROPERTIES COMPILE_FLAGS "-fPIC")
 endif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
