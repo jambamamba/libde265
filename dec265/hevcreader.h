@@ -1,12 +1,13 @@
 #pragma once
 
+#include <atomic>
 #include <stdlib.h>
 #include <stdint.h>
 #include <functional>
 
 struct HevcReader
 {
-   HevcReader(std::function<void ()> waitfn);
+   HevcReader(std::function<void ()> waitfn,  std::atomic<bool> &stop);
    ~HevcReader();
    int eof();
    size_t read(void * data, size_t size);
@@ -14,6 +15,7 @@ struct HevcReader
 
    void receivedData(char *data, size_t size);
    std::function<void ()> wait;
+    std::atomic<bool> &_stop;
 
    bool IsFull();
    bool IsEmpty();

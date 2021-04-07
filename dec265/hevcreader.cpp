@@ -4,13 +4,14 @@
 #include <memory.h>
 #include <string.h>
 
-HevcReader::HevcReader(std::function<void ()> waitfn)
+HevcReader::HevcReader(std::function<void ()> waitfn,  std::atomic<bool> &stop)
    : wait(waitfn)
    , head(1)
    , tail(0)
    , capacity(1024*16)
    , ringbuffer((char*)malloc(capacity))
    , fp(nullptr)//fopen("/tmp/frames.hevc", "wb")
+   , _stop(stop)
 {}
 
 HevcReader::~HevcReader()
@@ -70,6 +71,10 @@ size_t HevcReader::Remove(char *buffer, size_t size)
    size_t copied = 0;
    for(size_t i = 0; i < size; ++i)
    {
+     if(_stop)
+     {
+         return 0;
+     }
       while(IsEmpty())
       {
          wait();
