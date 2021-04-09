@@ -71,14 +71,12 @@ size_t HevcReader::Remove(char *buffer, size_t size)
    size_t copied = 0;
    for(size_t i = 0; i < size; ++i)
    {
-     if(_stop)
-     {
-         return 0;
-     }
-      while(IsEmpty())
-      {
-         wait();
-      }
+       if(_stop){return 0;}
+       while(IsEmpty())
+       {
+           if(_stop){return 0;}
+           wait();
+       }
        tail = (tail + 1) % capacity;
        buffer[i] = ringbuffer[tail];
        copied ++;
