@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <functional>
+#include <stdio.h>
 
 struct HevcReader
 {
